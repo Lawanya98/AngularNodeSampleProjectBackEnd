@@ -5,9 +5,10 @@ const async = require("async");
 
 exports.saveUser = async function (user) {
     console.log("Start-[user-model]-saveUser");
+    console.log(user);
     var Id = uuidv1();
-    var dbQuery = `INSERT INTO [users] (Username, Email, Password, Phone, PasswordExpiryTime)
-    VALUES ( '${user.userName}', '${user.Email}','${user.Password}','${user.Phone}','${user.passwordExpiryTime}')`;
+    var dbQuery = `INSERT INTO [users] (Id, Username, Email, Password, Phone, PasswordExpiryTime)
+    VALUES ( '${Id}','${user.Username}', '${user.Email}','${user.Password}','${user.Phone}','${user.PasswordExpiryTime}')`;
     var result = await db.query(dbQuery);
     console.log("End-[user-model]-saveUser");
     return Id, result;
