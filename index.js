@@ -14,6 +14,8 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use('/api', router);
 
+const userController = require("./controllers/user_controller");
+
 //CONNECT TO DATABASE AND RETRIEVE DATA
 
 // async function getItems() {
@@ -165,7 +167,7 @@ router.route('/items/:id').put((request, response) => {
 
 // })
 
-
+router.route('/registerUser').post(userController.registerUser);
 
 
 // setTimeout(() => {
