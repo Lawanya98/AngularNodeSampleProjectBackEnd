@@ -168,6 +168,7 @@ router.route('/items/:id').put((request, response) => {
 // })
 
 router.route('/registerUser').post(userController.registerUser);
+router.route('/loginUser').post(userController.loginUser);
 
 
 // setTimeout(() => {

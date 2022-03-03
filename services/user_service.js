@@ -1,11 +1,16 @@
 const db = require("../dboperations");
 var bcrypt = require('bcryptjs');
 const userModel = require("../models/user_model");
+const UserLoginInfoModel = require("../models/userlogininfo_model");
 const moment = require('moment');
 var config = require('config');
+const basicutil = require("../util/basicutil");
+var empty = require('is-empty');
+const { v1: uuidv1 } = require('uuid');
 
 exports.registerUser = async function (user) {
     console.log("Start-[user-service]-registerUser");
+    console.log(user);
     const usernameAvailable = await this.checkUsernameAvailability(user.Username)
     const emailAvailable = await this.checkEmailAvailability(user.Email)
     console.log(usernameAvailable);
@@ -46,4 +51,52 @@ exports.checkEmailAvailability = async function (email) {
     const emailAvailable = await userModel.checkEmailAvailability(email)
     console.log("End-[user-service]-checkEmailAvailability");
     return emailAvailable;
+}
+
+exports.loginUser = async function (Username, Password, deviceId) {
+    console.log("Start-[user-service]-loginUser");
+    console.log(Username);
+    console.log(Password);
+    console.log(deviceId);
+    const users = await userModel.loginUser(Username);
+    if (!empty(users)) {
+        if (users[0].Password !== null) {
+            const isSamePwd = await bcrypt.compare(Password, users[0].Password);
+            if (isSamePwd) {
+                if (new Date(users[0].PasswordExpiryTime) > new Date()) {
+                    //generate the token and send
+                    const token = await basicutil.generateJWT(users);
+                    const refreshToken = await basicutil.generateRandomNum();
+                    var Id = uuidv1()
+                    //generate session expiry time
+                    let sessionTime = config.get('AppSessionTime')
+                    let sessionExpiryTime = sessionTime.replace("h", "");
+                    const expiryDate = moment().add(sessionExpiryTime, 'hours');
+                    let currentDate = moment();
+                    let lastAccessTime = currentDate.utc().format('YYYY-MM-DD HH:mm');
+                    console.log(lastAccessTime);
+                    const insertUserLoginData = await UserLoginInfoModel.insertUserLoginInfo(Id, users[0].Id,
+                        deviceId, refreshToken, expiryDate.utc().format('YYYY-MM-DD HH:mm'), lastAccessTime);
+                    console.log("user-service-inseretedloggingdata" + insertUserLoginData);
+                    console.log("End-[user-service]-loginUser");
+                    return {
+                        message: "Success",
+                        user: users,
+                        token: token,
+                        refreshToken: refreshToken
+                    }
+                } else {
+                    return {
+                        message: "Password is expired",
+                        user: users
+                    }
+                }
+            } else {
+                throw new Error('Invalid User');
+            }
+        }
+    } else {
+        //user does not exists
+        throw new Error('Invalid user');
+    }
 }

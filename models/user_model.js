@@ -2,6 +2,7 @@ const db = require("../dboperations");
 const { v1: uuidv1 } = require('uuid');
 const sql = require("mssql");
 const async = require("async");
+const basicutil = require("../util/basicutil");
 
 exports.saveUser = async function (user) {
     console.log("Start-[user-model]-saveUser");
@@ -29,3 +30,13 @@ exports.checkEmailAvailability = async function (email) {
     console.log("End-[user-model]-checkEmailAvailability");
     return result.recordset;
 }
+
+exports.loginUser = async function (Username) {
+    console.log("Start-[user-model]-loginUser");
+    console.log("mOdel-->" + Username);
+    var dbQuery = `SELECT * FROM [users] WHERE Username= '${Username}'`;
+    var result = await db.query(dbQuery);
+    console.log("mOdel-->" + result);
+    console.log("End-[user-model]-loginUser");
+    return result.recordset;
+};
