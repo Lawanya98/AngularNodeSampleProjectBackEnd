@@ -29,6 +29,7 @@ exports.registerUser = async function (user) {
 
         const userId = await userModel.saveUser(user);
         console.log("End-[user-service]-registerUser");
+        console.log(userId);
         return userId;
     } else {
         return {
@@ -92,11 +93,19 @@ exports.loginUser = async function (Username, Password, deviceId) {
                     }
                 }
             } else {
-                throw new Error('Invalid User');
+                // throw new Error('Invalid User');
+                return {
+                    message: "Invalid User",
+                    user: users
+                }
             }
         }
     } else {
         //user does not exists
-        throw new Error('Invalid user');
+        // throw new Error('Invalid user');
+        return {
+            message: "Invalid User",
+            user: users
+        }
     }
 }

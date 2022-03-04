@@ -10,6 +10,7 @@ exports.registerUser = async function (req, res, next) {
         var user = await userService.registerUser(req.body);
         if (user.InvalidUser != undefined && user.InvalidUser) {
             console.log("Invalid User");
+            console.log("controller user -" + user);
             return res.status(500).json({
                 status: {
                     code: 500,
@@ -20,6 +21,7 @@ exports.registerUser = async function (req, res, next) {
             });
         } else {
             console.log("End-[user-controller]-registerUser");
+            console.log("controller user -" + user);
             return res.status(200).json({
                 status: {
                     code: 200,

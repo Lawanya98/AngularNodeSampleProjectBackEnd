@@ -12,7 +12,8 @@ exports.saveUser = async function (user) {
     VALUES ( '${Id}','${user.Username}', '${user.Email}','${user.Password}','${user.Phone}','${user.PasswordExpiryTime}')`;
     var result = await db.query(dbQuery);
     console.log("End-[user-model]-saveUser");
-    return Id, result;
+    console.log("return -->" + Id);
+    return Id;
 }
 
 exports.checkUserNameAvailability = async function (name) {
