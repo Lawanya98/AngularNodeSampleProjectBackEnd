@@ -74,8 +74,9 @@ exports.loginUser = async function (Username, Password, deviceId) {
                     let sessionExpiryTime = sessionTime.replace("h", "");
                     const expiryDate = moment().add(sessionExpiryTime, 'hours');
                     let currentDate = moment();
+                    console.log('currentDate' + currentDate);
                     let lastAccessTime = currentDate.utc().format('YYYY-MM-DD HH:mm');
-                    console.log(lastAccessTime);
+                    console.log('lastAccessTime' + lastAccessTime);
                     const insertUserLoginData = await UserLoginInfoModel.insertUserLoginInfo(Id, users[0].Id,
                         deviceId, refreshToken, expiryDate.utc().format('YYYY-MM-DD HH:mm'), lastAccessTime);
                     console.log("user-service-inseretedloggingdata" + insertUserLoginData);
@@ -107,5 +108,41 @@ exports.loginUser = async function (Username, Password, deviceId) {
             message: "Invalid User",
             user: users
         }
+    }
+}
+
+exports.refreshToken = async function (userIdEncoded, deviceIdEncoded, refreshToken) {
+    console.log("Start-[user-service]-refreshToken()");
+    const deviceId = await basicutil.decodeBase64(deviceIdEncoded);
+    const userId = await basicutil.decodeBase64(userIdEncoded);
+    const logInfo = await UserLoginInfoModel.getUserLoginInfo(userId, deviceId);
+    if (!empty(logInfo)) {
+        const refreshTok = logInfo[0].refreshToken;
+        const user = await userModel.getUserById(userId);
+        if (refreshToken === refreshTok) {
+            let lastAccessTime = moment(loginInfo[0].LastAccessTime, 'YYYY-MM-DD HH:mm');
+            let currentTime = moment(new Date(), 'YYYY-MM-DD HH:mm');
+            var duration = moment.duration(currentTime.diff(lastAccessTime));
+            var hoursDiff = duration.asHours();
+            let sessionInactiveTime = config.get('SessionIdlePeriod').replace("h", "");
+            console.log("[user-service]-refreshToken(): sessioninactivetime --> " + sessionInactiveTime);
+            console.log("[user-service]-refreshToken(): hoursdiff --> " + hoursDiff);
+            if ((sessionInactiveTime > hoursDiff)) {
+                let sessionExpiryTime = config.get('AppSessionTime').replace("h", "");
+                let currentDate = moment();
+                const expiryDate = moment().add(sessionExpiryTime, 'hours');
+                let lastAccessTime = currentDate.utc().format('YYYY-MM-DD HH:mm');
+                await userLoginInfoModel.updateUserLoginInfo(loginInfo[0].Id, expiryDate.utc().format('YYYY-MM-DD HH:mm'), lastAccessTime);
+                const token = await basicutil.generateJWT(user);
+                console.log("End-[user-service]-refreshToken()");
+                return {
+                    token: token
+                }
+            } else {
+                throw new Error('Session Expired');
+            }
+        }
+    } else {
+        throw new Error('Invalid Token');
     }
 }
