@@ -13,12 +13,13 @@ exports.registerUser = async function (user) {
     console.log(user);
     const usernameAvailable = await this.checkUsernameAvailability(user.Username)
     const emailAvailable = await this.checkEmailAvailability(user.Email)
-    console.log(usernameAvailable);
-    console.log(emailAvailable);
+    console.log("16" + usernameAvailable[0].usernameAvailable);
+    console.log("17" + emailAvailable[0].emailAvailable);
     if (usernameAvailable[0].usernameAvailable == 1 && emailAvailable[0].emailAvailable == 1) {
         // Password encription.
         var salt = bcrypt.genSaltSync(10);
         var hash = bcrypt.hashSync(user.Password, salt);
+        console.log("22-hash" + hash);
         // Calculate password expiry time.
         let PasswordExpiryTime = config.get('PasswordExpiryTime').replace("d", "");
         let currentTime = moment();
@@ -26,12 +27,14 @@ exports.registerUser = async function (user) {
 
         user.Password = hash;
         user.PasswordExpiryTime = expiryTime.utc().format('YYYY-MM-DD HH:mm');
+        console.log("29-user" + user);
 
         const userId = await userModel.saveUser(user);
         console.log("End-[user-service]-registerUser");
         console.log(userId);
         return userId;
     } else {
+        console.log("came&&&&&&&&&&&");
         return {
             InvalidUser: true,
             usernameAvailable: usernameAvailable[0].usernameAvailable,
@@ -145,4 +148,11 @@ exports.refreshToken = async function (userIdEncoded, deviceIdEncoded, refreshTo
     } else {
         throw new Error('Invalid Token');
     }
+}
+
+exports.getUserById = async function (id) {
+    console.log("Start-[user-service]-getUserById()");
+    const user = await userModel.getUserById(id)
+    console.log("End-[user-service]-getUserById()");
+    return user;
 }

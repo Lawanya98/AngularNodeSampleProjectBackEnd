@@ -4,7 +4,7 @@ exports.getItems = async function () {
     console.log("Start-[item-model]-getItems()");
     var dbQuery = "SELECT * from Items";
     var result = await db.query(dbQuery);
-    console.log("End-[item-model]-getItems()");
+    console.log("End-[item-model]-getItems()" + result.recordset);
     return result.recordset;
 }
 

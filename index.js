@@ -25,10 +25,12 @@ router.route('/loginUser').post(userController.loginUser);
 router.route('/refreshToken').post(userController.refreshToken);
 
 router.route('/getItems').get(itemController.getItems);
-router.route('/getItemById/:id').get(itemController.getItemById);
+router.route('/getItemById/:id').get(auth, itemController.getItemById);
 router.route('/deleteItem/').post(auth, itemController.deleteItem);
-router.route('/updateItem/:id').post(itemController.updateItem);
-router.route('/insertItem').post(itemController.addNewItem);
+router.route('/updateItem/:id').post(auth, itemController.updateItem);
+router.route('/insertItem').post(auth, itemController.addNewItem);
+
+
 
 
 

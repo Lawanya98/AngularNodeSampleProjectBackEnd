@@ -33,11 +33,22 @@ exports.checkEmailAvailability = async function (email) {
 }
 
 exports.loginUser = async function (Username) {
-    console.log("Start-[user-model]-loginUser");
+    console.log("Start-[user-model]-loginUser()");
     console.log("mOdel-->" + Username);
     var dbQuery = `SELECT * FROM [users] WHERE Username= '${Username}'`;
     var result = await db.query(dbQuery);
     console.log("mOdel-->" + result);
-    console.log("End-[user-model]-loginUser");
+    console.log("End-[user-model]-loginUser()");
     return result.recordset;
 };
+
+exports.getUserById = async function (id) {
+    console.log("Start-[user-model]-getUserById()");
+    console.log("getUser id>>>>>" + id)
+    var dbQuery = `SELECT * FROM [users] WHERE Id= '${id}'`;
+    console.log(dbQuery);
+    var result = await db.query(dbQuery);
+    console.log("End-[user-model]-getUserById()");
+    console.log("getUser RESULT.RECORDSET>>>>>" + result);
+    return result.recordset;
+}

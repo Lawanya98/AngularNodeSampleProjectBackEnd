@@ -1,5 +1,6 @@
 {
     "PasswordExpiryTime": "90d",
     "AppSessionTime": "4h",
-    "privatekey": "sample2022chith"
+    "privatekey": "sample2022chith",
+    "SessionIdlePeriod": "8h"
 }
