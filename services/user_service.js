@@ -2,11 +2,13 @@ const db = require("../dboperations");
 var bcrypt = require('bcryptjs');
 const userModel = require("../models/user_model");
 const UserLoginInfoModel = require("../models/userlogininfo_model");
+const UserPwRestModel = require("../models/user_pw_reset_model");
 const moment = require('moment');
 var config = require('config');
 const basicutil = require("../util/basicutil");
 var empty = require('is-empty');
 const { v1: uuidv1 } = require('uuid');
+const mailUtil = require("../util/mailutil");
 
 exports.registerUser = async function (user) {
     console.log("Start-[user-service]-registerUser");
@@ -155,4 +157,130 @@ exports.getUserById = async function (id) {
     const user = await userModel.getUserById(id)
     console.log("End-[user-service]-getUserById()");
     return user;
+}
+
+
+exports.requestPasswordReset = async function (userNameEnc, emailEnc, status) {
+    console.log("Start-[user-service]-requestPasswordReset()");
+    console.log("[user-service]-requestPasswordReset()::::emailENC-----" + emailEnc);
+    console.log("[user-service]-requestPasswordReset()::::userNameEnc-----" + userNameEnc);
+
+    let email;
+    let userName;
+    if (status) {
+        email = emailEnc;
+        userName = userNameEnc;
+    } else {
+        email = await basicutil.decodeBase64(emailEnc);
+        userName = await basicutil.decodeBase64(userNameEnc)
+    }
+    console.log("[user-service]-requestPasswordReset()::::email, username-----" + email, userName);
+    const user = await userModel.getUserByEmail(userName, email); //capture user email by using user id
+    let requestId = uuidv1();
+    if (!empty(user)) {
+        const updateResetPassword = await UserPwRestModel.updateResetPasswordByUserId(user[0].Id)
+        //if user exists by email, send a pwd reset link
+        let currentTime = moment();
+        let passwordLinkValidTime = config.get('PasswordLinkValidPeriod').replace("h", "");
+        const expiryTime = moment(currentTime).add(passwordLinkValidTime, 'hours').utc().format('YYYY-MM-DD HH:mm')
+        const keyCode = await basicutil.generateRandomNum();
+        await UserPwRestModel.insertPasswordRequest(requestId, user[0].Id, expiryTime, keyCode);
+
+        //send the mail
+        let sendUrl = "http://localhost:4200/resetpassword?reqId=" + requestId + "&keyCode=" + keyCode;
+        console.log("[user-service]-requestPasswordReset()::190-::sendURL-----" + sendUrl)
+
+        const mailOptions = {
+            //from: "", // Sender address
+            to: email, // List of recipients
+            subject: "Password Reset Request - Sample Project", // Subject line
+        };
+        console.log("[user-service]-requestPasswordReset()::197-::mailOptions-----" + mailOptions.to);
+        let htmlText = "<p>Dear User,Please use the link below within 24 hours</p>" + "<a href='" + sendUrl + "' target='_blank'>Reset password</a>"
+
+        mailOptions.html = htmlText;
+
+        const mailSent = await mailUtil.sendMail(mailOptions);
+        console.log("[user-service]-requestPasswordReset()::203-: mailsent : " + mailSent);
+        if (mailSent) {
+            return true;
+        } else {
+            console.log("Email sending failed")
+            throw new Error('Email sending failed');
+        }
+    } else {
+        // user doesn't exist
+        console.log("Account not verified")
+        throw new Error('Account not verified');
+    }
+}
+
+
+exports.resetPassword = async function (reqId, keyCode, deviceIp, reqUserId, newPassword, confirmPassword) {
+    console.log("Start-[user-service]-resetPassword()");
+    console.log("[user_service] :: resetPassword()::222-:" + deviceIp)
+
+    //we don't need to veryfy link when password is expired 
+    let userId
+    if (empty(reqUserId)) {
+        const getUserId = await UserPwRestModel.getUserIdByRequestId(reqId)
+        userId = getUserId[0].UserId
+    } else {
+        userId = reqUserId
+    }
+
+    const user = await userModel.getUserById(userId);
+    if (newPassword == confirmPassword) {
+        if (!empty(reqId) && !empty(keyCode)) {
+            //validate the request here again, before resetting the password
+            const isValidRequest = await this.validatePasswordResetLink(reqId, keyCode, deviceIp);
+            if (isValidRequest) {
+                var salt = bcrypt.genSaltSync(10);
+                var hash = bcrypt.hashSync(newPassword, salt);
+                let passwordExpiryTime = config.get('PasswordExpiryTime').replace("d", "");
+                let currentTime = moment();
+                const expiryTime = moment(currentTime).add(passwordExpiryTime, 'days').utc().format('YYYY-MM-DD HH:mm')
+                await userModel.resetPassword(userId, hash, expiryTime); //reset password in user table	
+                await UserPwRestModel.updateIsActivated(reqId); // update user_reset_password table
+                await userModel.saveUserOldPassword(userId,
+                    currentTime.utc().format('YYYY-MM-DD HH:mm'), hash) // update old pw
+                return result;
+            } else {
+                //if the requestid and key code are not correct or request expired
+                console.log("[user_service] :: resetPassword()::251-:Invalid Request")
+                throw new Error('Invalid Request');
+            }
+        } else {
+            //reset expired password 
+            const salt = await bcrypt.genSalt(10);
+            const hash = await bcrypt.hash(newPassword, salt);
+            let passwordExpiryTime = config.get('PasswordExpiryTime').replace("d", "");
+            let currentTime = moment();
+            const expiryTime = moment(currentTime).add(passwordExpiryTime, 'days').utc().format('YYYY-MM-DD HH:mm')
+            await userModel.resetPassword(userId, hash, expiryTime); //reset password in user table
+            await userModel.saveUserOldPassword(userId,
+                currentTime.utc().format('YYYY-MM-DD HH:mm'), hash) // update old pw
+
+        }
+    } else {
+        console.log("[user_service] :: resetPassword()::267-:Invalid Request")
+        throw new Error('Invalid Request');
+    }
+}
+
+exports.validatePasswordResetLink = async function (reqId, keyCode) {
+    console.log("Start-[user-service]-validatePasswordResetLink()");
+    const result = await UserPwRestModel.getPWResetDataByReqId(reqId, keyCode);
+    if (!empty(result)) {
+        if (new Date(result[0].ResetExpiryTime) > new Date()) {
+            //if a request exists for that key code with the request id and  if it is not expired
+            return true;
+        } else {
+            console.log("[user_service] :: validatePasswordResetLink()::280-:Link not validate")
+            throw new Error('Link not valid');
+        }
+    } else {
+        console.log("[user_service] :: validatePasswordResetLink()::284-:Link not validate")
+        throw new Error('Link not valid');
+    }
 }

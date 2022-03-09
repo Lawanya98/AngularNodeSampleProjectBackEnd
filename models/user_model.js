@@ -52,3 +52,29 @@ exports.getUserById = async function (id) {
     console.log("getUser RESULT.RECORDSET>>>>>" + result);
     return result.recordset;
 }
+
+exports.getUserByEmail = async function (userName, email) {
+    console.log("Start-[user-model]-getUserByEmail()");
+    var dbQuery = `SELECT * FROM [users] WHERE Username= '${userName}' AND Email= '${email}'`;
+    var result = await db.query(dbQuery);
+    console.log("Start-[user-model]-getUserByEmail()");
+    return result.recordset;
+}
+
+exports.resetPassword = async function (userId, newPwd, expiryTime) {
+    console.log("Start-[user-model]-resetPassword()");
+    var dbQuery = `UPDATE [users] SET Password= '${newPwd}', PasswordExpiryTime= '${expiryTime}' WHERE Id= '${userId}'`;
+    var result = await db.query(dbQuery);
+    console.log("End-[user-model]-resetPassword()");
+    return result.recordset;
+}
+
+exports.saveUserOldPassword = async function (userId, currentTime, password) {
+    console.log("Start-[user-model]-saveUserOldPassword()");
+    var Id = uuidv1()
+    var dbQuery = `INSERT INTO [user_old_password] ([Id], [UserId], [PasswordTime], [password])
+    VALUES ('${Id}', '${userId}', '${currentTime}', '${password}')`;
+    var result = await db.query(dbQuery);
+    console.log("End-[user-model]-saveUserOldPassword()");
+    return result.recordset;
+}

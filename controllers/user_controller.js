@@ -104,7 +104,7 @@ exports.refreshToken = async function (req, res) {
                 //that means the authtoken is valid
                 //so can continue with refresh token to send a new token          
                 const result = await userService.refreshToken(userId, deviceId, refreshToken);
-                logger.debug("[user_controller] :: refreshToken() : result : " + result);
+                console.log("[user-controller]-refreshToken():::result" + result);
                 return res.status(200).json({
                     status: {
                         code: 200,
@@ -139,3 +139,132 @@ exports.refreshToken = async function (req, res) {
         });
     }
 };
+
+exports.requestPasswordReset = async function (req, res) {
+    try {
+        console.log("Start-[user-controller]-requestPasswordReset()");
+
+        const requestPasswordResetData = req.body;
+        console.log("[user-controller]-requestPasswordReset():148-::" + requestPasswordResetData);
+
+        const result = await userService.requestPasswordReset(requestPasswordResetData.UserName, requestPasswordResetData.Email, false);
+        console.log("[user-controller]-requestPasswordReset():151-::" + result);
+        console.log("End-[user-controller]-requestPasswordReset()");
+        return res.status(200).json({
+            status: {
+                code: 200,
+                name: i18n.__('Success'),
+                message: i18n.__('Successfully_Send_Request_For_Password_Reset')
+            },
+            payload: result
+        });
+    } catch (error) {
+        console.log("[user-controller]-requestPasswordReset(): error : " + error);
+        if (error.message == 'Account not verified') {
+            return res.status(401).json({
+                status: {
+                    code: 401,
+                    name: i18n.__('Error'),
+                    message: i18n.__('Account_Not_Verified')
+                },
+                payload: null
+            });
+        } else {
+            return res.status(500).json({
+                status: {
+                    code: 500,
+                    name: i18n.__('Error'),
+                    message: i18n.__('Error_Sending_Request_For_Password_Reset')
+                },
+                payload: null
+            });
+        }
+    }
+}
+
+exports.resetPassword = async function (req, res) {
+    console.log("Start-[user-controller]-requestPasswordReset()");
+
+    try {
+        const passwordResetData = req.body;
+        console.log("[user-controller]-requestPasswordReset(): passwordResetData : ---->" + passwordResetData)
+
+        const result = await userService.resetPassword(passwordResetData.ReqId, passwordResetData.KeyCode, passwordResetData.DeviceIP,
+            passwordResetData.UserId, passwordResetData.NewPassword, passwordResetData.ConfirmPassword)
+
+        console.log("[user-controller]-requestPasswordReset(): result : ---->" + result);
+        return res.status(200).json({
+            status: {
+                code: 200,
+                name: i18n.__('Success'),
+                message: i18n.__('Successfully_Reset_Password')
+            },
+            payload: result
+        });
+    } catch (error) {
+        console.log("[user-controller]-requestPasswordReset(): error::205-: ---->" + error);
+        if (error.message === 'Link not valid') {
+            console.log("[user-controller]-requestPasswordReset()::207-: Link not valid");
+            return res.status(403).json({
+                status: {
+                    code: 403,
+                    name: i18n.__('Link_not_valid'),
+                    message: i18n.__('Link_not_valid')
+                },
+                payload: null
+            });
+        } else {
+            console.log("[user-controller]-requestPasswordReset()::217-: Error_Reseting_Password");
+            return res.status(500).json({
+                status: {
+                    code: 500,
+                    name: i18n.__('Error'),
+                    message: i18n.__('Error_Reseting_Password')
+                },
+                payload: null
+            });
+        }
+    }
+}
+
+exports.validatePasswordResetLink = async function (req, res) {
+    console.log("Start-[user-controller]-validatePasswordResetLink()");
+    console.log("[user-controller]-validatePasswordResetLink(): req ::" + req);
+    try {
+        var reqId = req.params.reqId;
+        var keyCode = req.params.keyCode
+        const result = await userService.validatePasswordResetLink(reqId, keyCode)
+        console.log("[user-controller]-validatePasswordResetLink(): result ::" + result);
+        return res.status(200).json({
+            status: {
+                code: 200,
+                name: i18n.__('Success'),
+                message: i18n.__('Successfully_Reset_Password')
+            },
+            payload: result
+        });
+    } catch (error) {
+        console.log("[user-controller]-validatePasswordResetLink(): error ::247-:" + error);
+        if (error.message === 'Link not valid') {
+            console.log("[user-controller]-validatePasswordResetLink():::249-:Link_not_valid");
+            return res.status(403).json({
+                status: {
+                    code: 403,
+                    name: i18n.__('Link_not_valid'),
+                    message: i18n.__('Link_not_valid')
+                },
+                payload: null
+            });
+        } else {
+            console.log("[user-controller]-validatePasswordResetLink():::259-:Error_Reseting_Password");
+            return res.status(500).json({
+                status: {
+                    code: 500,
+                    name: i18n.__('Error'),
+                    message: i18n.__('Error_Reseting_Password')
+                },
+                payload: null
+            });
+        }
+    }
+}

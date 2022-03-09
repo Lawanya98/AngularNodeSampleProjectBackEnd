@@ -8,11 +8,41 @@ var bodyParser = require('body-parser');
 var cors = require('cors');
 var app = express();
 var router = express.Router();
+const i18n = require("i18n");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
 app.use('/api', router);
+
+app.use(cors()); //NOTE : if needed we have to configure to allow only certain urls later
+i18n.configure({
+    locales: ['en'],
+    directory: __dirname + '/locales'
+});
+
+//set CORS headers 
+app.use(function (req, res, next) {
+    // Website you wish to allow to connect
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+
+    // Set to true if you need the website to include cookies in the requests sent
+    // to the API (e.g. in case you use sessions)
+    res.setHeader('Access-Control-Allow-Credentials', true);
+
+    res.header('X-XSS-Protection', '1; mode=block');
+    res.header('X-Frame-Options', 'DENY');
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('Cache-Control', 'private, max-age=0');
+    // Pass to next layer of middleware
+    next();
+})
 
 const auth = require("./middleware/auth");
 const userController = require("./controllers/user_controller");
@@ -23,6 +53,9 @@ const { getUserById } = require('./models/user_model');
 router.route('/registerUser').post(userController.registerUser);
 router.route('/loginUser').post(userController.loginUser);
 router.route('/refreshToken').post(userController.refreshToken);
+
+router.route('/requestPasswordReset').post(userController.requestPasswordReset);
+router.route('/resetPassword').post(userController.resetPassword);
 
 router.route('/getItems').get(itemController.getItems);
 router.route('/getItemById/:id').get(auth, itemController.getItemById);

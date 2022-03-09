@@ -2,5 +2,7 @@
     "PasswordExpiryTime": "90d",
     "AppSessionTime": "4h",
     "privatekey": "sample2022chith",
-    "SessionIdlePeriod": "8h"
+    "SessionIdlePeriod": "8h",
+    "PasswordLinkValidPeriod": "24h",
+    "emailTempPath": "../public/templates/email_template.html"
 }
