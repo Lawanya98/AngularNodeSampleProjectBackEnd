@@ -187,9 +187,9 @@ exports.resetPassword = async function (req, res) {
 
     try {
         const passwordResetData = req.body;
-        console.log("[user-controller]-requestPasswordReset(): passwordResetData : ---->" + passwordResetData)
-
-        const result = await userService.resetPassword(passwordResetData.ReqId, passwordResetData.KeyCode, passwordResetData.DeviceIP,
+        console.log("[user-controller]-requestPasswordReset(): 190-::passwordResetData : ---->" + passwordResetData)
+        console.log("191-:::" + passwordResetData.ReqId);
+        const result = await userService.resetPassword(passwordResetData.ReqId, passwordResetData.KeyCode,
             passwordResetData.UserId, passwordResetData.NewPassword, passwordResetData.ConfirmPassword)
 
         console.log("[user-controller]-requestPasswordReset(): result : ---->" + result);
@@ -268,3 +268,32 @@ exports.validatePasswordResetLink = async function (req, res) {
         }
     }
 }
+
+exports.checkPasswordAvailability = async function (req, res, next) {
+    console.log("Start-[user-controller]-checkPasswordAvailability()");
+    try {
+        var password = req.params.password;
+        var userId = req.params.userId
+        var reqId = req.params.reqId
+        var passwordExists = await userService.checkPasswordAvailability(password, userId, reqId);
+        console.log("End-[user-controller]-checkPasswordAvailability()");
+        return res.status(200).json({
+            status: {
+                code: 200,
+                name: i18n.__('Success'),
+                message: i18n.__('Successfully_Validated_Input')
+            },
+            payload: passwordExists
+        });
+    } catch (error) {
+        console.log("[user-controller]-checkPasswordAvailability():::ERROR:" + error);
+        return res.status(500).json({
+            status: {
+                code: 500,
+                name: i18n.__('Error'),
+                message: i18n.__('Error_Validating_Input')
+            },
+            payload: null
+        });
+    }
+};

@@ -4,5 +4,6 @@
     "privatekey": "sample2022chith",
     "SessionIdlePeriod": "8h",
     "PasswordLinkValidPeriod": "24h",
-    "emailTempPath": "../public/templates/email_template.html"
+    "emailTempPath": "../public/templates/email_template.html",
+    "OldPaswordCount": "3"
 }

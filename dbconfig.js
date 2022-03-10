@@ -1,6 +1,6 @@
 const config = {
     user: 'atlinkNode',
-    password: '1234',
+    password: 'ChithAt123@',
     server: 'localhost',
     // server:'localhost\\41SK2I5',
     database: 'Products',

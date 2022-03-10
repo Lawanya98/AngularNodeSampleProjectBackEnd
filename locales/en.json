@@ -2,5 +2,10 @@
 	"Error": "Error",
 	"Error_Sending_Request_For_Password_Reset": "Error_Sending_Request_For_Password_Reset",
 	"Success": "Success",
-	"Successfully_Send_Request_For_Password_Reset": "Successfully_Send_Request_For_Password_Reset"
+	"Successfully_Send_Request_For_Password_Reset": "Successfully_Send_Request_For_Password_Reset",
+	"Successfully_Reset_Password": "Successfully_Reset_Password",
+	"Error_Validating_Input": "Error_Validating_Input",
+	"Successfully_Validated_Input": "Successfully_Validated_Input",
+	"Error_Reseting_Password": "Error_Reseting_Password",
+	"Link_not_valid": "Link_not_valid"
 }

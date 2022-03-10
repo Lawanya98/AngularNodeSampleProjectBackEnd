@@ -216,10 +216,9 @@ exports.requestPasswordReset = async function (userNameEnc, emailEnc, status) {
 }
 
 
-exports.resetPassword = async function (reqId, keyCode, deviceIp, reqUserId, newPassword, confirmPassword) {
+exports.resetPassword = async function (reqId, keyCode, reqUserId, newPassword, confirmPassword) {
     console.log("Start-[user-service]-resetPassword()");
-    console.log("[user_service] :: resetPassword()::222-:" + deviceIp)
-
+    console.log("221:::::reUserId" + reqUserId);
     //we don't need to veryfy link when password is expired 
     let userId
     if (empty(reqUserId)) {
@@ -233,7 +232,7 @@ exports.resetPassword = async function (reqId, keyCode, deviceIp, reqUserId, new
     if (newPassword == confirmPassword) {
         if (!empty(reqId) && !empty(keyCode)) {
             //validate the request here again, before resetting the password
-            const isValidRequest = await this.validatePasswordResetLink(reqId, keyCode, deviceIp);
+            const isValidRequest = await this.validatePasswordResetLink(reqId, keyCode);
             if (isValidRequest) {
                 var salt = bcrypt.genSaltSync(10);
                 var hash = bcrypt.hashSync(newPassword, salt);
@@ -244,7 +243,7 @@ exports.resetPassword = async function (reqId, keyCode, deviceIp, reqUserId, new
                 await UserPwRestModel.updateIsActivated(reqId); // update user_reset_password table
                 await userModel.saveUserOldPassword(userId,
                     currentTime.utc().format('YYYY-MM-DD HH:mm'), hash) // update old pw
-                return result;
+                return true;
             } else {
                 //if the requestid and key code are not correct or request expired
                 console.log("[user_service] :: resetPassword()::251-:Invalid Request")
@@ -283,4 +282,37 @@ exports.validatePasswordResetLink = async function (reqId, keyCode) {
         console.log("[user_service] :: validatePasswordResetLink()::284-:Link not validate")
         throw new Error('Link not valid');
     }
+}
+
+exports.checkPasswordAvailability = async function (passwordEnc, reqUserId, reqId) {
+    console.log("Start-[user-service]-checkPasswordAvailability()");
+    let password = await basicutil.decodeBase64(passwordEnc);
+    let userId
+    if (reqUserId == 'undefined') {
+        console.log("UNDDDDDDDDDDDDDDDDDDDDDDD");
+        const getUserId = await UserPwRestModel.getUserIdByRequestId(reqId)
+        userId = getUserId[0].UserId
+        console.log("UNDDDDDDDDDDDDDDDDDDDDDDD" + userId);
+    } else {
+        userId = reqUserId
+    }
+    const user = await userModel.getUserById(userId);
+    console.log("UNDDDDDDDDDDDDDDDDDDDDDDD" + user);
+
+    let count = config.get('OldPaswordCount')
+    const getPassword = await userModel.checkPasswordAvailability(userId, count)
+    console.log("UNDDDDDDDDDDDDDDDDDDDDDDD" + getPassword.length);
+    let userPasswordArray = [];
+    for (let i = 0; i < getPassword.length; i++) {
+        const isSamePwd = await bcrypt.compare(password, getPassword[i].password);
+
+        if (isSamePwd) {
+            userPasswordArray.push(getPassword[i].password)
+        }
+    }
+    console.log("End-[user-service]-checkPasswordAvailability()");
+    return {
+        count: userPasswordArray.length,
+        user: user
+    };
 }

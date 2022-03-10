@@ -78,3 +78,11 @@ exports.saveUserOldPassword = async function (userId, currentTime, password) {
     console.log("End-[user-model]-saveUserOldPassword()");
     return result.recordset;
 }
+
+exports.checkPasswordAvailability = async function (userId, count) {
+    console.log("Start-[user-model]-checkPasswordAvailability()");
+    var dbQuery = `SELECT TOP (${count}) password FROM [user_old_password] WHERE UserId = '${userId}' ORDER BY PasswordTime DESC`
+    var result = await db.query(dbQuery);
+    console.log("End-[user-model]-checkPasswordAvailability()");
+    return result.recordset;
+}
