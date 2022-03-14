@@ -10,6 +10,10 @@ var empty = require('is-empty');
 const { v1: uuidv1 } = require('uuid');
 const mailUtil = require("../util/mailutil");
 const speakeasy = require('speakeasy');
+const { TokenExpiredError } = require("jsonwebtoken");
+const accountSid = 'AC4a685acb8cd78f28d337238fc411eeee';
+const authToken = '3f148bc95e3aa7f0bb3f7c87de372195';
+const client = require('twilio')(accountSid, authToken);
 
 exports.registerUser = async function (user) {
     console.log("Start-[user-service]-registerUser");
@@ -44,17 +48,27 @@ exports.registerUser = async function (user) {
         user.OTPCode = temp_secret.base32;
         console.log("OTPPPPPPPPPPPPPPPPPP---->" + user.OTPCode);
 
-        // var token = speakeasy.totp({
-        //     secret: temp_secret.base32,
-        //     encoding: 'base32',
-        //     // time : Date.new(),  default is current time.
-        //     // epoch : 0,  default is 0. It is the offset from UNIX epoch.
-        //     // step is used, with time as time + step, to invalidate the token.
-        //     // step: 100
-        // });
-        // console.log("OTPPPPPPPPPPPPPPPPPP---->" + token);
+
+        var token = speakeasy.totp({
+            secret: user.OTPCode,
+            encoding: 'base32',
+            // time : Date.new(),  default is current time.
+            // epoch : 0,  default is 0. It is the offset from UNIX epoch.
+            // step is used, with time as time + step, to invalidate the token.
+            // step: 100
+        });
+        console.log("OTPPPPPPPPPPPPPPPPPP---->" + token);
 
         const userId = await userModel.saveUser(user);
+
+        client.messages
+            .create({
+                body: token,
+                from: '+18329667745',
+                to: '+94714617570'
+            })
+            .then(message => console.log(message.sid));
+
         console.log("End-[user-service]-registerUser");
         console.log(userId);
         return userId;
@@ -199,7 +213,20 @@ exports.updateOTP = async function (data) {
             step: 100
         });
         const newOTP = temp_secret.base32;
+        var token = speakeasy.totp({
+            secret: newOTP,
+            encoding: 'base32',
+        });
+        client.messages
+            .create({
+                body: token,
+                from: '+18329667745',
+                to: '+94714617570'
+            })
+            .then(message => console.log(message.sid));
         const result = await userModel.updateOTP(userId, newOTP);
+
+
         console.log("End-[user-service]-newOTP()");
         return true;
     } else {
