@@ -51,7 +51,9 @@ const { getUserById } = require('./models/user_model');
 
 
 router.route('/registerUser').post(userController.registerUser);
+router.route('/authenticateUser').post(userController.authenticateUser);
 router.route('/loginUser').post(userController.loginUser);
+router.route('/updateOTP').post(userController.updateOTP);
 router.route('/refreshToken').post(userController.refreshToken);
 
 router.route('/requestPasswordReset').post(userController.requestPasswordReset);

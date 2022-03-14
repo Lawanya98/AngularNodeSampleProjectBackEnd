@@ -9,6 +9,7 @@ const basicutil = require("../util/basicutil");
 var empty = require('is-empty');
 const { v1: uuidv1 } = require('uuid');
 const mailUtil = require("../util/mailutil");
+const speakeasy = require('speakeasy');
 
 exports.registerUser = async function (user) {
     console.log("Start-[user-service]-registerUser");
@@ -30,6 +31,28 @@ exports.registerUser = async function (user) {
         user.Password = hash;
         user.PasswordExpiryTime = expiryTime.utc().format('YYYY-MM-DD HH:mm');
         console.log("29-user" + user);
+
+        const temp_secret = speakeasy.generateSecret({
+            step: 100
+        });
+
+        //----------------------save temp_secret as it is -----------------------------------
+        // user.OTPCode = temp_secret;
+        // console.log("OTPPPPPPPPPPPPPPPPPP---->" + user.OTPCode);
+
+        //----------------------save only base32 -----------------------------------
+        user.OTPCode = temp_secret.base32;
+        console.log("OTPPPPPPPPPPPPPPPPPP---->" + user.OTPCode);
+
+        // var token = speakeasy.totp({
+        //     secret: temp_secret.base32,
+        //     encoding: 'base32',
+        //     // time : Date.new(),  default is current time.
+        //     // epoch : 0,  default is 0. It is the offset from UNIX epoch.
+        //     // step is used, with time as time + step, to invalidate the token.
+        //     // step: 100
+        // });
+        // console.log("OTPPPPPPPPPPPPPPPPPP---->" + token);
 
         const userId = await userModel.saveUser(user);
         console.log("End-[user-service]-registerUser");
@@ -59,6 +82,47 @@ exports.checkEmailAvailability = async function (email) {
     return emailAvailable;
 }
 
+exports.authenticateUser = async function (data) {
+    console.log("Start-[user-service]-authenticateUser");
+    const user = await userModel.getUserByName(data.Username);
+    //compare passed value with original otp
+    console.log("84--->" + user);
+    if (!empty(user)) {
+        const userId = user[0].Id;
+        const OTPCode = user[0].OTPCode;
+        const token = data.OTP;
+        console.log("89--->" + token);
+        console.log("90--->" + OTPCode);
+        const verified = speakeasy.totp.verify({
+            secret: OTPCode,
+            encoding: 'base32',
+            token: token,
+            window: 1
+        });
+
+
+        // const { base32: secret } = user[0].OTPCode;
+        // console.log("99--->" + secret);
+        // const verified = speakeasy.totp.verify({
+        //     secret,
+        //     encoding: 'base32',
+        //     token
+        // });
+
+        console.log(verified);
+        if (verified) {
+            const result = await userModel.authenticateUser(userId);
+            console.log("End-[user-service]-authenticateUser");
+            return true;
+        } else {
+            throw new Error('Invalid OTP');
+        }
+
+    } else {
+        throw new Error('Invalid Username');
+    }
+}
+
 exports.loginUser = async function (Username, Password, deviceId) {
     console.log("Start-[user-service]-loginUser");
     console.log(Username);
@@ -66,46 +130,54 @@ exports.loginUser = async function (Username, Password, deviceId) {
     console.log(deviceId);
     const users = await userModel.loginUser(Username);
     if (!empty(users)) {
-        if (users[0].Password !== null) {
-            const isSamePwd = await bcrypt.compare(Password, users[0].Password);
-            if (isSamePwd) {
-                if (new Date(users[0].PasswordExpiryTime) > new Date()) {
-                    //generate the token and send
-                    const token = await basicutil.generateJWT(users);
-                    const refreshToken = await basicutil.generateRandomNum();
-                    var Id = uuidv1()
-                    //generate session expiry time
-                    let sessionTime = config.get('AppSessionTime')
-                    let sessionExpiryTime = sessionTime.replace("h", "");
-                    const expiryDate = moment().add(sessionExpiryTime, 'hours');
-                    let currentDate = moment();
-                    console.log('currentDate' + currentDate);
-                    let lastAccessTime = currentDate.utc().format('YYYY-MM-DD HH:mm');
-                    console.log('lastAccessTime' + lastAccessTime);
-                    const insertUserLoginData = await UserLoginInfoModel.insertUserLoginInfo(Id, users[0].Id,
-                        deviceId, refreshToken, expiryDate.utc().format('YYYY-MM-DD HH:mm'), lastAccessTime);
-                    console.log("user-service-inseretedloggingdata" + insertUserLoginData);
-                    console.log("End-[user-service]-loginUser");
-                    return {
-                        message: "Success",
-                        user: users,
-                        token: token,
-                        refreshToken: refreshToken
+        if (users[0].isAuthenticated == '1') {
+            if (users[0].Password !== null) {
+                const isSamePwd = await bcrypt.compare(Password, users[0].Password);
+                if (isSamePwd) {
+                    if (new Date(users[0].PasswordExpiryTime) > new Date()) {
+                        //generate the token and send
+                        const token = await basicutil.generateJWT(users);
+                        const refreshToken = await basicutil.generateRandomNum();
+                        var Id = uuidv1()
+                        //generate session expiry time
+                        let sessionTime = config.get('AppSessionTime')
+                        let sessionExpiryTime = sessionTime.replace("h", "");
+                        const expiryDate = moment().add(sessionExpiryTime, 'hours');
+                        let currentDate = moment();
+                        console.log('currentDate' + currentDate);
+                        let lastAccessTime = currentDate.utc().format('YYYY-MM-DD HH:mm');
+                        console.log('lastAccessTime' + lastAccessTime);
+                        const insertUserLoginData = await UserLoginInfoModel.insertUserLoginInfo(Id, users[0].Id,
+                            deviceId, refreshToken, expiryDate.utc().format('YYYY-MM-DD HH:mm'), lastAccessTime);
+                        console.log("user-service-inseretedloggingdata" + insertUserLoginData);
+                        console.log("End-[user-service]-loginUser");
+                        return {
+                            message: "Success",
+                            user: users,
+                            token: token,
+                            refreshToken: refreshToken
+                        }
+                    } else {
+                        return {
+                            message: "Password is expired",
+                            user: users
+                        }
                     }
                 } else {
+                    // throw new Error('Invalid User');
                     return {
-                        message: "Password is expired",
+                        message: "Invalid User",
                         user: users
                     }
                 }
-            } else {
-                // throw new Error('Invalid User');
-                return {
-                    message: "Invalid User",
-                    user: users
-                }
+            }
+        } else {
+            return {
+                message: "OTP is not verified",
+                user: users
             }
         }
+
     } else {
         //user does not exists
         // throw new Error('Invalid user');
@@ -114,6 +186,26 @@ exports.loginUser = async function (Username, Password, deviceId) {
             user: users
         }
     }
+}
+
+exports.updateOTP = async function (data) {
+    console.log("Start-[user-service]-newOTP()");
+    console.log(data);
+    const user = await userModel.getUserByName(data.Username);
+    console.log("194--->" + user);
+    if (!empty(user)) {
+        const userId = user[0].Id;
+        const temp_secret = speakeasy.generateSecret({
+            step: 100
+        });
+        const newOTP = temp_secret.base32;
+        const result = await userModel.updateOTP(userId, newOTP);
+        console.log("End-[user-service]-newOTP()");
+        return true;
+    } else {
+        //no need because username is already validated in login once
+    }
+
 }
 
 exports.refreshToken = async function (userIdEncoded, deviceIdEncoded, refreshToken) {
@@ -250,15 +342,7 @@ exports.resetPassword = async function (reqId, keyCode, reqUserId, newPassword, 
                 throw new Error('Invalid Request');
             }
         } else {
-            //reset expired password 
-            const salt = await bcrypt.genSalt(10);
-            const hash = await bcrypt.hash(newPassword, salt);
-            let passwordExpiryTime = config.get('PasswordExpiryTime').replace("d", "");
-            let currentTime = moment();
-            const expiryTime = moment(currentTime).add(passwordExpiryTime, 'days').utc().format('YYYY-MM-DD HH:mm')
-            await userModel.resetPassword(userId, hash, expiryTime); //reset password in user table
-            await userModel.saveUserOldPassword(userId,
-                currentTime.utc().format('YYYY-MM-DD HH:mm'), hash) // update old pw
+
 
         }
     } else {

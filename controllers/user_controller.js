@@ -43,6 +43,47 @@ exports.registerUser = async function (req, res, next) {
     }
 };
 
+exports.authenticateUser = async function (req, res, next) {
+    console.log("Start-[user-controller]-authenticateUser");
+    try {
+        console.log(req.body.Username);
+        console.log(req.body.OTP);
+        var result = await userService.authenticateUser(req.body);
+        if (result) {
+            console.log("End-[user-controller]-authenticateUser");
+            console.log("controller user -" + result);
+            return res.status(200).json({
+                status: {
+                    code: 200,
+                    // name: i18n.__('Success'),
+                    // message: i18n.__('Successfully_Authenticated')
+                },
+                payload: result
+            });
+        } else {
+            console.log("Authentication Fails");
+            return res.status(500).json({
+                status: {
+                    code: 500,
+                    name: i18n.__('Error'),
+                    message: i18n.__('Error_Authentication')
+                },
+                payload: null
+            });
+        }
+    } catch (error) {
+        console.log("Error-[user-controller]-authenticateUser" + error);
+        return res.status(500).json({
+            status: {
+                code: 500,
+                // name: i18n.__('Error'),
+                // message: i18n.__('Error_Authentication')
+            },
+            payload: null
+        });
+    }
+};
+
 exports.loginUser = async function (req, res, next) {
     console.log("Start-[user-controller]-loginUser");
     try {
@@ -69,6 +110,15 @@ exports.loginUser = async function (req, res, next) {
                 },
                 payload: null
             });
+        } else if (error.message === 'OTP is not verified') {
+            return res.status(405).json({
+                status: {
+                    code: 405,
+                    // name: i18n.__('Internal_Server_Error'),
+                    // message: i18n.__('Internal_Server_Error')
+                },
+                payload: null
+            });
         } else {
             return res.status(500).json({
                 status: {
@@ -82,6 +132,44 @@ exports.loginUser = async function (req, res, next) {
 
     }
 };
+
+exports.updateOTP = async function (req, res) {
+    console.log("Start-[user-controller]-updateOTP()");
+    try {
+        console.log(req.body);
+        var result = await userService.updateOTP(req.body);
+        if (result) {
+            console.log("End-[user-controller]-updateOTP()");
+            return res.status(200).json({
+                status: {
+                    code: 200,
+                    name: i18n.__('Success'),
+                    message: i18n.__('Successfully_Created_New_OTP')
+                },
+            });
+        } else {
+            return res.status(500).json({
+                status: {
+                    code: 500,
+                    name: i18n.__('Error'),
+                    message: i18n.__('Error_Creating_New_OTP')
+                },
+            });
+        }
+
+    } catch (error) {
+        console.log("Error-[user-controller]-newOTP()" + error);
+        return res.status(500).json({
+            status: {
+                code: 500,
+                // name: i18n.__('Error'),
+                // message: i18n.__('Error_Registering_User')
+            },
+            payload: null
+        });
+    }
+
+}
 
 
 exports.refreshToken = async function (req, res) {
@@ -183,16 +271,16 @@ exports.requestPasswordReset = async function (req, res) {
 }
 
 exports.resetPassword = async function (req, res) {
-    console.log("Start-[user-controller]-requestPasswordReset()");
+    console.log("Start-[user-controller]-resetPassword()");
 
     try {
         const passwordResetData = req.body;
-        console.log("[user-controller]-requestPasswordReset(): 190-::passwordResetData : ---->" + passwordResetData)
+        console.log("[user-controller]-resetPassword(): 190-::passwordResetData : ---->" + passwordResetData)
         console.log("191-:::" + passwordResetData.ReqId);
         const result = await userService.resetPassword(passwordResetData.ReqId, passwordResetData.KeyCode,
             passwordResetData.UserId, passwordResetData.NewPassword, passwordResetData.ConfirmPassword)
 
-        console.log("[user-controller]-requestPasswordReset(): result : ---->" + result);
+        console.log("[user-controller]-resetPassword(): result : ---->" + result);
         return res.status(200).json({
             status: {
                 code: 200,
@@ -202,9 +290,9 @@ exports.resetPassword = async function (req, res) {
             payload: result
         });
     } catch (error) {
-        console.log("[user-controller]-requestPasswordReset(): error::205-: ---->" + error);
+        console.log("[user-controller]-resetPassword(): error::205-: ---->" + error);
         if (error.message === 'Link not valid') {
-            console.log("[user-controller]-requestPasswordReset()::207-: Link not valid");
+            console.log("[user-controller]-resetPassword()::207-: Link not valid");
             return res.status(403).json({
                 status: {
                     code: 403,
@@ -214,7 +302,7 @@ exports.resetPassword = async function (req, res) {
                 payload: null
             });
         } else {
-            console.log("[user-controller]-requestPasswordReset()::217-: Error_Reseting_Password");
+            console.log("[user-controller]-resetPassword()::217-: Error_Reseting_Password");
             return res.status(500).json({
                 status: {
                     code: 500,

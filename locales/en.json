@@ -7,5 +7,7 @@
 	"Error_Validating_Input": "Error_Validating_Input",
 	"Successfully_Validated_Input": "Successfully_Validated_Input",
 	"Error_Reseting_Password": "Error_Reseting_Password",
-	"Link_not_valid": "Link_not_valid"
+	"Link_not_valid": "Link_not_valid",
+	"Error_Creating_New_OTP": "Error_Creating_New_OTP",
+	"Successfully_Created_New_OTP": "Successfully_Created_New_OTP"
 }

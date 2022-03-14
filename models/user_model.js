@@ -8,12 +8,28 @@ exports.saveUser = async function (user) {
     console.log("Start-[user-model]-saveUser");
     console.log(user);
     var Id = uuidv1();
-    var dbQuery = `INSERT INTO [users] (Id, Username, Email, Password, Phone, PasswordExpiryTime)
-    VALUES ( '${Id}','${user.Username}', '${user.Email}','${user.Password}','${user.Phone}','${user.PasswordExpiryTime}')`;
+    var dbQuery = `INSERT INTO [users] (Id, Username, Email, Password, Phone, PasswordExpiryTime, isAuthenticated, OTPCode)
+    VALUES ( '${Id}','${user.Username}', '${user.Email}','${user.Password}','${user.Phone}','${user.PasswordExpiryTime}','0', '${user.OTPCode}')`;
     var result = await db.query(dbQuery);
     console.log("End-[user-model]-saveUser");
     console.log("return -->" + Id);
     return Id;
+}
+
+exports.authenticateUser = async function (userId) {
+    console.log("Start-[user-model]-authenticateUser");
+    var dbQuery = `UPDATE [users] SET isAuthenticated = '1' WHERE Id= '${userId}'`;
+    var result = await db.query(dbQuery);
+    console.log("End-[user-model]-authenticateUser");
+    return result.recordset;
+}
+
+exports.updateOTP = async function (userId, newOTP) {
+    console.log("Start-[user-model]-updateOTP()");
+    var dbQuery = `UPDATE [users] SET OTPCode = '${newOTP}' WHERE Id= '${userId}'`;
+    var result = await db.query(dbQuery);
+    console.log("End-[user-model]-updateOTP()");
+    return result.recordset;
 }
 
 exports.checkUserNameAvailability = async function (name) {
@@ -58,6 +74,14 @@ exports.getUserByEmail = async function (userName, email) {
     var dbQuery = `SELECT * FROM [users] WHERE Username= '${userName}' AND Email= '${email}'`;
     var result = await db.query(dbQuery);
     console.log("Start-[user-model]-getUserByEmail()");
+    return result.recordset;
+}
+
+exports.getUserByName = async function (userName) {
+    console.log("Start-[user-model]-getUserByName()");
+    var dbQuery = `SELECT * FROM [users] WHERE Username= '${userName}' `;
+    var result = await db.query(dbQuery);
+    console.log("Start-[user-model]-getUserByName()");
     return result.recordset;
 }
 
