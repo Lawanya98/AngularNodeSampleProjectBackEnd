@@ -58,6 +58,7 @@ exports.loginUser = async function (Username) {
     return result.recordset;
 };
 
+//Get user by their Id
 exports.getUserById = async function (id) {
     console.log("Start-[user-model]-getUserById()");
     console.log("getUser id>>>>>" + id)
