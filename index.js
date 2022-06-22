@@ -49,7 +49,7 @@ const userController = require("./controllers/user_controller");
 const itemController = require("./controllers/item_controller");
 const { getUserById } = require('./models/user_model');
 
-
+//user routes
 router.route('/registerUser').post(userController.registerUser);
 router.route('/authenticateUser').post(userController.authenticateUser);
 router.route('/loginUser').post(userController.loginUser);
