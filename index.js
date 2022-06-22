@@ -60,7 +60,7 @@ router.route('/requestPasswordReset').post(userController.requestPasswordReset);
 router.route('/resetPassword').post(userController.resetPassword);
 router.route('/validatePasswordResetLink/:reqId/:keyCode').get(userController.validatePasswordResetLink);
 router.route('/checkPasswordAvailability/:password/:userId/:reqId').get(userController.checkPasswordAvailability);
-
+//item routes
 router.route('/getItems').get(itemController.getItems);
 router.route('/getItemById/:id').get(auth, itemController.getItemById);
 router.route('/deleteItem/').post(auth, itemController.deleteItem);
