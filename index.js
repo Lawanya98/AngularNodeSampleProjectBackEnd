@@ -49,7 +49,7 @@ const userController = require("./controllers/user_controller");
 const itemController = require("./controllers/item_controller");
 const { getUserById } = require('./models/user_model');
 
-
+//user routes
 router.route('/registerUser').post(userController.registerUser);
 router.route('/authenticateUser').post(userController.authenticateUser);
 router.route('/loginUser').post(userController.loginUser);
@@ -61,6 +61,7 @@ router.route('/resetPassword').post(userController.resetPassword);
 router.route('/validatePasswordResetLink/:reqId/:keyCode').get(userController.validatePasswordResetLink);
 router.route('/checkPasswordAvailability/:password/:userId/:reqId').get(userController.checkPasswordAvailability);
 
+//item routes
 router.route('/getItems').get(itemController.getItems);
 router.route('/getItemById/:id').get(auth, itemController.getItemById);
 router.route('/deleteItem/').post(auth, itemController.deleteItem);
