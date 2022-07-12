@@ -41,6 +41,7 @@ exports.registerUser = async function (user) {
         });
 
         //----------------------save temp_secret as it is -----------------------------------
+        //---------------------------------------------
         // user.OTPCode = temp_secret;
         // console.log("OTPPPPPPPPPPPPPPPPPP---->" + user.OTPCode);
 
